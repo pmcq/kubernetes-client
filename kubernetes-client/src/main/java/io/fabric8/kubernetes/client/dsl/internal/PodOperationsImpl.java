@@ -15,10 +15,12 @@
  */
 package io.fabric8.kubernetes.client.dsl.internal;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.Reader;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -133,20 +135,36 @@ public class PodOperationsImpl extends HasMetadataOperation<Pod, PodList, Doneab
         return sb.toString();
     }
 
+    protected ResponseBody doGetLog(){
+      try {
+        URL url = new URL(URLUtils.join(getResourceUrl().toString(), getLogParameters()));
+        Request.Builder requestBuilder = new Request.Builder().get().url(url);
+        Request request = requestBuilder.build();
+        Response response = client.newCall(request).execute();
+        ResponseBody body = response.body();
+        assertResponseCode(request, response);
+        return body;
+      } catch (Throwable t) {
+        throw KubernetesClientException.launderThrowable(forOperationType("doGetLog"), t);
+      }
+    }
+
     @Override
     public String getLog() {
-        try {
-            URL url = new URL(URLUtils.join(getResourceUrl().toString(), getLogParameters()));
-            Request.Builder requestBuilder = new Request.Builder().get().url(url);
-            Request request = requestBuilder.build();
-            Response response = client.newCall(request).execute();
-            try (ResponseBody body = response.body()) {
-              assertResponseCode(request, response);
-              return body.string();
-            }
-        } catch (Throwable t) {
-            throw KubernetesClientException.launderThrowable(forOperationType("getLog"), t);
-        }
+      try(ResponseBody body = doGetLog()) {
+        return body.string();
+      } catch (IOException e) {
+        throw KubernetesClientException.launderThrowable(forOperationType("getLog"), e);
+      }
+    }
+
+  /**
+   * Returns an unclosed Reader. It's the caller responsibility to close it.
+   * @return Reader                                                                                                                                                             
+   */
+  @Override
+    public Reader getLogReader() {
+        return doGetLog().charStream();
     }
 
     @Override
@@ -343,22 +361,5 @@ public class PodOperationsImpl extends HasMetadataOperation<Pod, PodList, Doneab
     public BytesLimitTerminateTimeTailPrettyLoggable<String, LogWatch> usingTimestamps() {
         return new PodOperationsImpl(client, getConfig(), apiVersion, namespace, name, isCascading(), getItem(), getResourceVersion(), isReloadingFromServer(), getGracePeriodSeconds(), getLabels(), getLabelsNot(), getLabelsIn(), getLabelsNotIn(), getFields(), containerId, in, inPipe, out, outPipe, err, errPipe, withTTY, withTerminatedStatus, true, sinceTimestamp, sinceSeconds, withTailingLines, withPrettyOutput, execListener, limitBytes);
     }
-
-  @Override
-  public Pod waitUntilReady(long amount, TimeUnit timeUnit) throws InterruptedException {
-    Pod pod = get();
-    if (pod == null) {
-      throw new IllegalArgumentException("Pod with name:[" + name + "] in namespace:[" + namespace + "] not found!");
-    }
-
-    if (Readiness.isReady(pod)) {
-      return pod;
-    }
-
-    ReadinessWatcher<Pod> watcher = new ReadinessWatcher<>(pod);
-    try (Watch watch = watch(watcher)) {
-      return watcher.await(amount, timeUnit);
-    }
-  }
 }
 

@@ -19,7 +19,7 @@ This client provides access to the full [Kubernetes](http://kubernetes.io/) &
     - [Passing a reference of a resource to the client](#passing-a-reference-of-a-resource-to-the-client)
     - [Adapting a client](#adaptin-a-client)
         - [Adapting and close](#adapting-and-close)
-- [Mocking Kubernetes](#kubernetes-mock)        
+- [Mocking Kubernetes](#mocking-kubernetes)        
 
 ## Usage
 
@@ -77,7 +77,7 @@ System properties are preferred over environment variables. The following system
 Alternatively you can use the `ConfigBuilder` to create a config object for the Kubernetes client:
 
 ```java
-Config config = new ConfigBuilder().withMasterUrl("https://mymaster.com").build;
+Config config = new ConfigBuilder().withMasterUrl("https://mymaster.com").build();
 KubernetesClient client = new DefaultKubernetesClient(config);
 ```
 
@@ -130,14 +130,14 @@ In the same spirit you can inline builders to create:
 
 ```java
 Namespace myns = client.namespaces().createNew()
-                   .editMetadata()
+                   .withNewMetadata()
                      .withName("myns")
                      .addToLabels("a", "label")
                    .endMetadata()
                    .done();
 
 Service myservice = client.services().inNamespace("default").createNew()
-                     .editMetadata()
+                     .withNewMetadata()
                        .withName("myservice")
                        .addToLabels("another", "label")
                      .endMetadata()
@@ -285,5 +285,10 @@ Then you can use the server like:
     }
 
 
+## Compatibility
 
+|                           | Kubernetes 1.4.9 | Kubernetes 1.6.2 | Kubernetes 1.7.10 | 
+|---------------------------|------------------|------------------|-------------------|
+| kubernetes-client 1.3.92  | +                | +                | -                 | 
+| kubernetes-client 3.0.3   | -                | -                | ✓                 |
 

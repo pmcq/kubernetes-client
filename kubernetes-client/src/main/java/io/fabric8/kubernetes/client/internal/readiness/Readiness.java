@@ -46,14 +46,16 @@ public class Readiness {
   private static final String TRUE = "True";
 
 
-  public static boolean isReadinessApplicable(HasMetadata item) {
-    return (item instanceof Deployment) ||
-      (item instanceof ReplicaSet) ||
-      (item instanceof Pod) ||
-      (item instanceof DeploymentConfig) ||
-      (item instanceof ReplicationController) ||
-      (item instanceof Endpoints) ||
-      (item instanceof Node);
+  public static boolean isReadinessApplicable(Class<? extends HasMetadata> itemClass) {
+    return Deployment.class.isAssignableFrom(itemClass)
+      || ReplicaSet.class.isAssignableFrom(itemClass)
+      || Pod.class.isAssignableFrom(itemClass)
+      || DeploymentConfig.class.isAssignableFrom(itemClass)
+      || ReplicationController.class.isAssignableFrom(itemClass)
+      || Endpoints.class.isAssignableFrom(itemClass)
+      || Node.class.isAssignableFrom(itemClass)
+      || StatefulSet.class.isAssignableFrom(itemClass)
+      ;
   }
 
   public static boolean isReady(HasMetadata item) {
@@ -74,7 +76,7 @@ public class Readiness {
     } else if (item instanceof StatefulSet) {
       return isStatefulSetReady((StatefulSet) item);
     } else {
-      throw new IllegalArgumentException("Item needs to be one of [Node, Deployment, ReplicaSet, StatefulSet, Pod, DeploymentConfig, ReplicationController], but was: [" + item.getKind() + "]");
+      throw new IllegalArgumentException("Item needs to be one of [Node, Deployment, ReplicaSet, StatefulSet, Pod, DeploymentConfig, ReplicationController], but was: [" + item != null ? item.getKind() : "Unknown (null)" + "]");
     }
   }
 

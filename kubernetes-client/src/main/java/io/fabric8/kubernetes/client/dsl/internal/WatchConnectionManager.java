@@ -185,14 +185,14 @@ public class WatchConnectionManager<T extends HasMetadata, L extends KubernetesR
           logger.warn("Exec Failure: HTTP {}, Status: {} - {}", response.code(), status.getCode(), status.getMessage(),
               t);
           if (!started.get()) {
+            queue.clear();
             queue.add(new KubernetesClientException(status));
-            return; // no reconnect
           }
         } else {
           logger.warn("Exec Failure", t);
           if (!started.get()) {
+            queue.clear();
             queue.add(new KubernetesClientException("Failed to start websocket", t));
-            return; // no reconnect
           }
         }
 

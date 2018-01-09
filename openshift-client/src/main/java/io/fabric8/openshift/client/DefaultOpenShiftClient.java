@@ -21,7 +21,6 @@ import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionLis
 import io.fabric8.kubernetes.api.model.apiextensions.DoneableCustomResourceDefinition;
 import io.fabric8.kubernetes.client.AppsAPIGroupClient;
 import io.fabric8.kubernetes.client.AutoscalingAPIGroupClient;
-import io.fabric8.kubernetes.client.CustomResourceList;
 import io.fabric8.kubernetes.client.RequestConfig;
 import io.fabric8.kubernetes.client.dsl.AppsAPIGroupDSL;
 import io.fabric8.kubernetes.client.dsl.AutoscalingAPIGroupDSL;
@@ -32,6 +31,7 @@ import io.fabric8.kubernetes.client.dsl.NamespaceListVisitFromServerGetDeleteRec
 import io.fabric8.kubernetes.client.WithRequestCallable;
 import io.fabric8.kubernetes.client.dsl.ParameterNamespaceListVisitFromServerGetDeleteRecreateWaitApplicable;
 import io.fabric8.kubernetes.client.dsl.internal.CustomResourceOperationsImpl;
+import io.fabric8.kubernetes.client.utils.ImpersonatorInterceptor;
 import io.fabric8.kubernetes.client.utils.Serialization;
 import io.fabric8.openshift.api.model.*;
 import io.fabric8.openshift.client.dsl.BuildResource;
@@ -142,7 +142,9 @@ public class DefaultOpenShiftClient extends BaseClient implements NamespacedOpen
     httpClient = httpClient.newBuilder().authenticator(Authenticator.NONE).build();
     OkHttpClient.Builder builder = httpClient.newBuilder();
     builder.interceptors().clear();
-    return builder.addInterceptor(new OpenShiftOAuthInterceptor(httpClient, OpenShiftConfig.wrap(getConfiguration()))).build();
+    return builder.addInterceptor(new OpenShiftOAuthInterceptor(httpClient, OpenShiftConfig.wrap(getConfiguration())))
+      .addInterceptor(new ImpersonatorInterceptor(getConfiguration().getRequestConfig()))
+      .build();
   }
 
   @Override
@@ -271,8 +273,13 @@ public class DefaultOpenShiftClient extends BaseClient implements NamespacedOpen
   }
 
   @Override
-  public <T extends HasMetadata, L extends KubernetesResourceList, D extends Doneable<T>> MixedOperation<T, L, D, Resource<T, D>> customResource(CustomResourceDefinition crd, Class<T> resourceType, Class<L> listClass, Class<D> doneClass) {
+  public <T extends HasMetadata, L extends KubernetesResourceList, D extends Doneable<T>> MixedOperation<T, L, D, Resource<T, D>> customResources(CustomResourceDefinition crd, Class<T> resourceType, Class<L> listClass, Class<D> doneClass) {
     return new CustomResourceOperationsImpl<T,L,D>(httpClient, getConfiguration(), crd, resourceType, listClass, doneClass);
+  }
+
+  @Override
+  public <T extends HasMetadata, L extends KubernetesResourceList, D extends Doneable<T>> MixedOperation<T, L, D, Resource<T, D>> customResource(CustomResourceDefinition crd, Class<T> resourceType, Class<L> listClass, Class<D> doneClass) {
+    return customResources(crd, resourceType, listClass, doneClass);
   }
 
   @Override

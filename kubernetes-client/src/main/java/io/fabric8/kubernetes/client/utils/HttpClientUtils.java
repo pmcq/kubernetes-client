@@ -94,7 +94,7 @@ public class HttpClientUtils {
               }
               return chain.proceed(request);
             }
-          });
+          }).addInterceptor(new ImpersonatorInterceptor(config.getRequestConfig()));
 
             Logger reqLogger = LoggerFactory.getLogger(HttpLoggingInterceptor.class);
             if (reqLogger.isTraceEnabled()) {
@@ -117,6 +117,7 @@ public class HttpClientUtils {
 
             if (config.getMaxConcurrentRequestsPerHost() > 0) {
               Dispatcher dispatcher = new Dispatcher();
+              dispatcher.setMaxRequests(config.getMaxConcurrentRequests());
               dispatcher.setMaxRequestsPerHost(config.getMaxConcurrentRequestsPerHost());
               httpClientBuilder.dispatcher(dispatcher);
             }
